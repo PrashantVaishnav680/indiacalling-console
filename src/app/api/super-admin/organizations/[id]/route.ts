@@ -76,6 +76,19 @@ function buildOrgActivityTrends(calls: any[], rate: number) {
   };
 }
 
+function buildOrgLookupFilter(id: string) {
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    return {
+      $or: [
+        { _id: id },
+        { _id: new mongoose.Types.ObjectId(id) },
+        { slug: id },
+      ],
+    };
+  }
+  return { $or: [{ _id: id }, { slug: id }] };
+}
+
 /**
  * GET /api/super-admin/organizations/[id]
  * Zero-PII Organization Inspect endpoint: returns org profile, limits, billing/GST,
@@ -102,11 +115,7 @@ export async function GET(
   let orgLogs: any[] = [];
 
   if (db) {
-    const dbOrg = await Organization.findOne(
-      mongoose.Types.ObjectId.isValid(id)
-        ? { _id: id }
-        : { $or: [{ _id: id }, { slug: id }] }
-    ).lean();
+    const dbOrg = await Organization.findOne(buildOrgLookupFilter(id)).lean();
     if (dbOrg) {
       org = { ...(dbOrg as any), _id: String((dbOrg as any)._id) };
       const orgIdStr = org._id;
@@ -262,9 +271,7 @@ export async function PATCH(
   let updatedDoc: any = null;
   if (db) {
     updatedDoc = await Organization.findOneAndUpdate(
-      mongoose.Types.ObjectId.isValid(id)
-        ? { _id: id }
-        : { $or: [{ _id: id }, { slug: id }] },
+      buildOrgLookupFilter(id),
       { $set: updates },
       { new: true }
     ).lean();
@@ -325,11 +332,7 @@ export async function DELETE(
       );
     }
 
-    const filter = mongoose.Types.ObjectId.isValid(id)
-      ? { _id: new mongoose.Types.ObjectId(id) }
-      : { $or: [{ _id: id }, { slug: id }] };
-
-    const org: any = await Organization.findOne(filter).lean();
+    const org: any = await Organization.findOne(buildOrgLookupFilter(id)).lean();
     if (!org) {
       return NextResponse.json(
         { error: "Organization not found." },

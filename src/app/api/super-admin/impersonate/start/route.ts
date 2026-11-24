@@ -36,7 +36,13 @@ export async function POST(req: NextRequest) {
     }
 
     const filter = mongoose.Types.ObjectId.isValid(organizationId)
-      ? { _id: new mongoose.Types.ObjectId(organizationId) }
+      ? {
+          $or: [
+            { _id: organizationId },
+            { _id: new mongoose.Types.ObjectId(organizationId) },
+            { slug: organizationId },
+          ],
+        }
       : { $or: [{ _id: organizationId }, { slug: organizationId }] };
 
     const org: any = await Organization.findOne(filter).lean();

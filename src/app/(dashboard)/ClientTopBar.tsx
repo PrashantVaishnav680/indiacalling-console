@@ -195,9 +195,13 @@ export default function ClientTopBar({
           </>
         )}
 
-        <span className="hidden xl:inline-flex px-2.5 py-1 rounded-full bg-[#EEF0FF] border border-[#C7CBFF] text-[11px] font-bold text-[#635BFF] whitespace-nowrap">
+        <Link
+          href={isSuperAdmin ? '/super-admin/organizations' : '/settings'}
+          title={isSuperAdmin ? 'View Organizations Directory' : 'View Organization Profile & Settings'}
+          className="hidden xl:inline-flex items-center px-2.5 py-1 rounded-full bg-[#EEF0FF] hover:bg-[#635BFF] hover:text-white border border-[#C7CBFF] text-[11px] font-bold text-[#635BFF] transition-colors whitespace-nowrap"
+        >
           {isSuperAdmin ? 'Super Admin' : 'Organization'}
-        </span>
+        </Link>
 
         {/* Live Request & Wallet Notifications Bell */}
         <div className="relative" ref={notifRef}>

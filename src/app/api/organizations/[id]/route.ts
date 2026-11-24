@@ -70,13 +70,16 @@ export async function GET(
   let org: any = getOrganizationById(id);
 
   if (db) {
-    let dbOrg: any = null;
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      dbOrg = await Organization.findById(id).lean();
-    }
-    if (!dbOrg) {
-      dbOrg = await Organization.findOne({ slug: id }).lean();
-    }
+    const filter = mongoose.Types.ObjectId.isValid(id)
+      ? {
+          $or: [
+            { _id: id },
+            { _id: new mongoose.Types.ObjectId(id) },
+            { slug: id },
+          ],
+        }
+      : { $or: [{ _id: id }, { slug: id }] };
+    const dbOrg: any = await Organization.findOne(filter).lean();
     if (dbOrg) {
       org = { ...dbOrg, _id: String(dbOrg._id) };
       addOrganization(org);
@@ -343,20 +346,21 @@ export async function PATCH(
   const db = await connectToDatabase();
   let updatedMongoDoc: any = null;
   if (db) {
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      updatedMongoDoc = await Organization.findByIdAndUpdate(
-        id,
-        { $set: updates },
-        { new: true }
-      ).lean();
-    }
-    if (!updatedMongoDoc) {
-      updatedMongoDoc = await Organization.findOneAndUpdate(
-        { $or: [{ _id: id }, { slug: id }, { slug: "indiacalling-org" }] },
-        { $set: updates },
-        { new: true }
-      ).lean();
-    }
+    const patchFilter = mongoose.Types.ObjectId.isValid(id)
+      ? {
+          $or: [
+            { _id: id },
+            { _id: new mongoose.Types.ObjectId(id) },
+            { slug: id },
+            { slug: "indiacalling-org" },
+          ],
+        }
+      : { $or: [{ _id: id }, { slug: id }, { slug: "indiacalling-org" }] };
+    updatedMongoDoc = await Organization.findOneAndUpdate(
+      patchFilter,
+      { $set: updates },
+      { new: true }
+    ).lean();
 
     // Persist Primary Administrator updates in MongoDB User collection
     if (
